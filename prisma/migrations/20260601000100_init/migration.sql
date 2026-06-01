@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "SourceType" AS ENUM ('RSS', 'PRODUCT', 'GITHUB', 'HACKER_NEWS', 'CUSTOM_URL');
 
 -- CreateEnum
