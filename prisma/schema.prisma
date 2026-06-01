@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  RSS
+  PRODUCT
+  GITHUB
+  HACKER_NEWS
+  CUSTOM_URL
+}
+
+enum SourceItemStatus {
+  NEW
+  DUPLICATE
+  USED
+  REJECTED
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  REJECTED
+}
+
+enum AutomationStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Source {
+  id          String       @id @default(cuid())
+  name        String
+  type        SourceType
+  url         String
+  isActive    Boolean      @default(true)
+  notes       String?
+  items       SourceItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([type, url])
+}
+
+model SourceItem {
+  id              String           @id @default(cuid())
+  sourceId        String
+  source          Source           @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title           String
+  url             String
+  summary         String?          @db.Text
+  author          String?
+  publishedAt     DateTime?
+  raw             Json?
+  normalizedTitle String
+  contentHash     String
+  status          SourceItemStatus @default(NEW)
+  duplicateOfId   String?
+  duplicateOf     SourceItem?      @relation("DuplicateItems", fields: [duplicateOfId], references: [id])
+  duplicates      SourceItem[]     @relation("DuplicateItems")
+  articles        ArticleItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([url])
+  @@index([contentHash])
+  @@index([publishedAt])
+}
+
+model Article {
+  id               String        @id @default(cuid())
+  title            String
+  seoTitle         String
+  metaDescription  String
+  slug             String        @unique
+  summary          String        @db.Text
+  content          String        @db.Text
+  tags             String[]
+  status           ArticleStatus @default(DRAFT)
+  publishedAt      DateTime?
+  sourceItems      ArticleItem[]
+  automationRunId  String?
+  automationRun    AutomationRun? @relation(fields: [automationRunId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model ArticleItem {
+  articleId    String
+  sourceItemId String
+  article      Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  sourceItem   SourceItem @relation(fields: [sourceItemId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, sourceItemId])
+}
+
+model AffiliateLink {
+  id             String   @id @default(cuid())
+  productName    String
+  destinationUrl String
+  affiliateUrl   String
+  category       String
+  notes          String?
+  isSponsored    Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([productName])
+}
+
+model AutomationRun {
+  id             String           @id @default(cuid())
+  status         AutomationStatus @default(RUNNING)
+  startedAt      DateTime         @default(now())
+  finishedAt     DateTime?
+  fetchedCount   Int              @default(0)
+  dedupedCount   Int              @default(0)
+  usedItemCount  Int              @default(0)
+  articleId      String?
+  articles       Article[]
+  error          String?          @db.Text
+  logs           Json?
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String?
+  createdAt DateTime @default(now())
+}
