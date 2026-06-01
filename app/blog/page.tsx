@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ArticleCard } from "@/components/article-card";
+import { isMissingDatabaseTable } from "@/lib/db-errors";
 
 export const metadata = {
   title: "Blog",
@@ -9,10 +10,15 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function BlogIndexPage() {
-  const posts = await prisma.article.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" }
-  });
+  const posts = await prisma.article
+    .findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" }
+    })
+    .catch((error) => {
+      if (isMissingDatabaseTable(error)) return [];
+      throw error;
+    });
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">

@@ -4,13 +4,17 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { prisma } from "@/lib/prisma";
 import { NewsletterBlock } from "@/components/newsletter-block";
+import { isMissingDatabaseTable } from "@/lib/db-errors";
 
 type Props = { params: { slug: string } };
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await prisma.article.findUnique({ where: { slug: params.slug } });
+  const article = await prisma.article.findUnique({ where: { slug: params.slug } }).catch((error) => {
+    if (isMissingDatabaseTable(error)) return null;
+    throw error;
+  });
   if (!article || article.status !== "PUBLISHED") return {};
   return {
     title: article.seoTitle,
@@ -27,10 +31,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const article = await prisma.article.findUnique({
-    where: { slug: params.slug },
-    include: { sourceItems: { include: { sourceItem: true } } }
-  });
+  const article = await prisma.article
+    .findUnique({
+      where: { slug: params.slug },
+      include: { sourceItems: { include: { sourceItem: true } } }
+    })
+    .catch((error) => {
+      if (isMissingDatabaseTable(error)) return null;
+      throw error;
+    });
 
   if (!article || article.status !== "PUBLISHED") notFound();
 

@@ -2,15 +2,21 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ArticleCard } from "@/components/article-card";
 import { NewsletterBlock } from "@/components/newsletter-block";
+import { isMissingDatabaseTable } from "@/lib/db-errors";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const posts = await prisma.article.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    take: 6
-  });
+  const posts = await prisma.article
+    .findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: 6
+    })
+    .catch((error) => {
+      if (isMissingDatabaseTable(error)) return [];
+      throw error;
+    });
 
   return (
     <main>
