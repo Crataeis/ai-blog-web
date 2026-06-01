@@ -138,9 +138,11 @@ npm run build
 4. Run Prisma migration against production:
 
 ```bash
-npx prisma migrate deploy
+npm run db:deploy
 npm run db:seed
 ```
+
+To run this from your own computer, open a terminal in this project folder, create `.env` with your Neon `DATABASE_URL` and `DATABASE_URL_UNPOOLED`, then run the same two commands. You only need to do this once for the initial database setup, and again whenever new Prisma migrations are added.
 
 5. Add a Vercel Cron Job that sends a daily `POST` to `/api/cron/daily` with:
 
