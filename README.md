@@ -40,6 +40,7 @@ cp .env.example .env
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/ai_daily_blog?schema=public"
+DATABASE_URL_UNPOOLED="postgresql://USER:PASSWORD@UNPOOLED_HOST:5432/ai_daily_blog?schema=public"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="generate-a-long-random-secret"
 OPENAI_API_KEY="sk-..."
@@ -132,6 +133,7 @@ npm run build
 
 1. Create a managed PostgreSQL database through Vercel Postgres, Neon, Supabase, or Railway.
 2. Add the environment variables from `.env.example` in Vercel project settings.
+   Use Neon's pooled URL for `DATABASE_URL` and the non-pooling URL for `DATABASE_URL_UNPOOLED`.
 3. Deploy the repo to Vercel.
 4. Run Prisma migration against production:
 
