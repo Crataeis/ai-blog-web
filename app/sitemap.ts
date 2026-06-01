@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
   if (!process.env.DATABASE_URL) {
@@ -9,7 +11,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${siteUrl}/blog`, lastModified: new Date() }
     ];
   }
-  const articles = await prisma.article.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true } });
+  const articles = await prisma.article
+    .findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true } })
+    .catch(() => []);
+
   return [
     { url: siteUrl, lastModified: new Date() },
     { url: `${siteUrl}/blog`, lastModified: new Date() },
